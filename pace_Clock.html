@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pace Clock Emulator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #2d3748; /* Slightly lighter dark background */
+            border-radius: 1.5rem; /* More rounded corners */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2); /* Deeper shadow */
+            padding: 2.5rem; /* More padding */
+            width: 100%;
+            max-width: 900px; /* Increased max-width */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+        .clock-display {
+            font-size: 5rem; /* Larger font size */
+            font-weight: 700;
+            color: #48bb78; /* Green color for clock */
+            text-shadow: 0 0 15px rgba(72, 187, 120, 0.7); /* Glow effect */
+            letter-spacing: 0.1em;
+            min-width: 350px; /* Ensure a minimum width */
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .clock-time {
+            font-size: 1em; /* Inherit from parent */
+        }
+        .clock-program-info {
+            font-size: 0.3em; /* Smaller font for program info */
+            font-weight: 400;
+            color: #a0aec0;
+            margin-top: 0.5rem;
+        }
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Responsive grid */
+            gap: 1rem;
+            width: 100%;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem; /* Rounded buttons */
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            border: none;
+            outline: none;
+        }
+        .btn-primary {
+            background-color: #4299e1; /* Blue */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #3182ce;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.4), 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+        .btn-danger {
+            background-color: #e53e3e; /* Red */
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c53030;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.4), 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+        .btn-secondary {
+            background-color: #a0aec0; /* Gray */
+            color: #2d3748;
+        }
+        .btn-secondary:hover {
+            background-color: #718096;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.4), 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+        }
+        .input-group label {
+            font-size: 0.875rem;
+            color: #a0aec0;
+        }
+        .input-group input {
+            background-color: #4a5568;
+            border: 1px solid #667eea; /* Purple border */
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            color: #e2e8f0;
+            font-size: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease-in-out;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #81e6d9; /* Teal focus */
+            box-shadow: 0 0 0 3px rgba(129, 230, 217, 0.5);
+        }
+        .interval-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+            width: 100%;
+        }
+        .status-display {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #81e6d9; /* Teal */
+            text-align: center;
+        }
+        /* Fullscreen styles */
+        .fullscreen-active .container {
+            width: 100vw;
+            height: 100vh;
+            max-width: none;
+            border-radius: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+        }
+        .fullscreen-active .clock-display {
+            font-size: 15vw; /* Responsive font size for fullscreen */
+        }
+        .fullscreen-active .controls,
+        .fullscreen-active .program-tabs,
+        .fullscreen-active .program-section,
+        .fullscreen-active .status-display {
+            display: none; /* Hide controls and program sections in fullscreen */
+        }
+        .fullscreen-active #fullscreen-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: block !important; /* Ensure it's visible */
+        }
+        .bracket-item {
+            background-color: #3b4557;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: flex-end;
+            position: relative;
+        }
+        .bracket-item .remove-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #e53e3e;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border: none;
+        }
+        .bracket-item .remove-btn:hover {
+            background-color: #c53030;
+        }
+        .program-tabs {
+            display: flex;
+            width: 100%;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .tab-btn {
+            background-color: #4a5568;
+            color: #e2e8f0;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s;
+        }
+        .tab-btn.active {
+            background-color: #667eea; /* Highlight active tab */
+            color: white;
+        }
+        .program-section {
+            display: none; /* Hidden by default */
+            width: 100%;
+            flex-direction: column; /* Ensure content stacks */
+            align-items: center;
+            gap: 2rem;
+            padding: 2rem;
+            background-color: #2d3748;
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
+        }
+        .program-section.active {
+            display: flex; /* Show active section */
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+            }
+            .clock-display {
+                font-size: 3.5rem; /* Adjust for smaller screens */
+            }
+            .controls-grid {
+                grid-template-columns: 1fr; /* Stack buttons on small screens */
+            }
+            .interval-inputs {
+                grid-template-columns: 1fr; /* Stack inputs on small screens */
+            }
+            .bracket-item {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .bracket-item .input-group {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container" class="container">
+        <!-- Main Pace Clock Display -->
+        <div id="clock" class="clock-display">
+            <span id="clockTime" class="clock-time">00:00</span>
+            <span id="clockProgramInfo" class="clock-program-info"></span>
+        </div>
+
+        <!-- Main Clock Controls -->
+        <div class="controls w-full flex flex-col items-center gap-4">
+            <div class="controls-grid">
+                <button id="startStopBtn" class="btn btn-primary">Start</button>
+                <button id="resetBtn" class="btn btn-danger">Reset</button>
+                <button id="fullscreenBtn" class="btn btn-secondary">Fullscreen</button>
+            </div>
+        </div>
+
+        <!-- Program Tabs -->
+        <div class="program-tabs">
+            <button id="simpleProgramTabBtn" class="tab-btn active">Simple Program</button>
+            <button id="bracketProgramTabBtn" class="tab-btn">Bracket Program</button>
+        </div>
+
+        <!-- Simple Program Section -->
+        <div id="simpleProgramSection" class="program-section active">
+            <h2 class="text-2xl font-bold text-teal-300 mb-4">Simple Program</h2>
+            <div class="interval-inputs">
+                <div class="input-group">
+                    <label for="simpleIntervalMin">Interval Minutes:</label>
+                    <input type="number" id="simpleIntervalMin" value="0" min="0" class="text-center">
+                </div>
+                <div class="input-group">
+                    <label for="simpleIntervalSec">Interval Seconds:</label>
+                    <input type="number" id="simpleIntervalSec" value="10" min="0" max="59" class="text-center">
+                </div>
+                <!-- Milliseconds input removed as per request -->
+                <div class="input-group">
+                    <label for="simpleReps">Reps per Interval:</label>
+                    <input type="number" id="simpleReps" value="1" min="1" class="text-center">
+                </div>
+                <div class="input-group">
+                    <label for="simpleRounds">Number of Rounds:</label>
+                    <input type="number" id="simpleRounds" value="1" min="1" class="text-center">
+                </div>
+            </div>
+            <div class="controls-grid mt-4">
+                <button id="startSimpleProgramBtn" class="btn btn-primary">Start Program</button>
+                <button id="resetSimpleProgramBtn" class="btn btn-danger">Reset Program</button>
+            </div>
+            <div id="simpleProgramStatus" class="status-display mt-4">Program Ready</div>
+        </div>
+
+        <!-- Bracket Program Section -->
+        <div id="bracketProgramSection" class="program-section">
+            <h2 class="text-2xl font-bold text-teal-300 mb-4">Bracket Program</h2>
+
+            <div id="bracketIntervalsContainer" class="w-full">
+                <!-- Bracket intervals will be added here dynamically -->
+            </div>
+
+            <button id="addIntervalToBracketBtn" class="btn btn-secondary w-full">Add Interval to Bracket</button>
+
+            <div class="input-group w-full mt-4">
+                <label for="bracketRounds">Number of Bracket Rounds:</label>
+                <input type="number" id="bracketRounds" value="1" min="1" class="text-center">
+            </div>
+
+            <div class="controls-grid mt-4">
+                <button id="startBracketProgramBtn" class="btn btn-primary">Start Program</button>
+                <button id="resetBracketProgramBtn" class="btn btn-danger">Reset Program</button>
+            </div>
+            <div id="bracketProgramStatus" class="status-display mt-4">Program Ready</div>
+        </div>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const clockDisplay = document.getElementById('clock');
+        const clockTimeDisplay = document.getElementById('clockTime');
+        const clockProgramInfoDisplay = document.getElementById('clockProgramInfo');
+        const startStopBtn = document.getElementById('startStopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const appContainer = document.getElementById('app-container');
+
+        // Tab elements
+        const simpleProgramTabBtn = document.getElementById('simpleProgramTabBtn');
+        const bracketProgramTabBtn = document.getElementById('bracketProgramTabBtn');
+        const simpleProgramSection = document.getElementById('simpleProgramSection');
+        const bracketProgramSection = document.getElementById('bracketProgramSection');
+
+        // Simple Program elements
+        const simpleIntervalMinInput = document.getElementById('simpleIntervalMin');
+        const simpleIntervalSecInput = document.getElementById('simpleIntervalSec');
+        const simpleRepsInput = document.getElementById('simpleReps');
+        const simpleRoundsInput = document.getElementById('simpleRounds');
+        const startSimpleProgramBtn = document.getElementById('startSimpleProgramBtn');
+        const resetSimpleProgramBtn = document.getElementById('resetSimpleProgramBtn');
+        const simpleProgramStatusDisplay = document.getElementById('simpleProgramStatus');
+
+        // Bracket Program elements
+        const bracketIntervalsContainer = document.getElementById('bracketIntervalsContainer');
+        const addIntervalToBracketBtn = document.getElementById('addIntervalToBracketBtn');
+        const bracketRoundsInput = document.getElementById('bracketRounds');
+        const startBracketProgramBtn = document.getElementById('startBracketProgramBtn');
+        const resetBracketProgramBtn = document.getElementById('resetBracketProgramBtn');
+        const bracketProgramStatusDisplay = document.getElementById('bracketProgramStatus');
+
+        // Main Clock Variables
+        let mainClockStartTime = 0;
+        let mainClockElapsedTime = 0;
+        let mainClockTimerInterval;
+        let isMainClockRunning = false;
+
+        // Program State Variables
+        let programTimerInterval;
+        let programStartTime = 0;
+        let programElapsedTime = 0;
+        let programIsRunning = false;
+        let activeProgramType = 'none'; // 'none', 'simple', 'bracket'
+
+        // Simple Program Specific Variables
+        let simpleTotalIntervalDurationMs = 0;
+        let simpleTotalRounds = 0;
+        let simpleTotalReps = 0;
+        let simpleCurrentRound = 0;
+        let simpleCurrentRep = 0;
+
+        // Bracket Program Specific Variables
+        let bracketDefinition = []; // Array to store { min, sec, ms, reps } for each interval in the bracket
+        let bracketTotalRounds = 1;
+        let bracketCurrentRound = 0;
+        let bracketCurrentItemIndex = 0;
+        let bracketCurrentRepInItem = 0;
+
+        /**
+         * Formats a time in milliseconds into MM:SS format.
+         * @param {number} ms - Time in milliseconds.
+         * @returns {string} Formatted time string.
+         */
+        function formatTime(ms) {
+            const minutes = Math.floor(ms / 60000);
+            const seconds = Math.floor((ms % 60000) / 1000);
+
+            const formattedMinutes = String(minutes).padStart(2, '0');
+            const formattedSeconds = String(seconds).padStart(2, '0');
+
+            return `${formattedMinutes}:${formattedSeconds}`;
+        }
+
+        /**
+         * Updates the main clock display.
+         * This function is only responsible for the main clock when no program is running.
+         */
+        function updateMainClock() {
+            if (!programIsRunning) {
+                mainClockElapsedTime = Date.now() - mainClockStartTime;
+                if (mainClockElapsedTime >= 3600000) { // Cap at 59:59 (60 minutes = 3600000 ms)
+                    mainClockElapsedTime = 3599000; // Set to 59:59 to avoid overflow issues
+                    stopMainClock(); // Stop the clock if it reaches the limit
+                }
+                clockTimeDisplay.textContent = formatTime(mainClockElapsedTime);
+                clockProgramInfoDisplay.textContent = ''; // Clear program info
+            }
+        }
+
+        /**
+         * Starts the main clock.
+         */
+        function startMainClock() {
+            if (!isMainClockRunning) {
+                mainClockStartTime = Date.now() - mainClockElapsedTime;
+                mainClockTimerInterval = setInterval(updateMainClock, 1000); // Update every 1000ms (1 second)
+                startStopBtn.textContent = 'Stop';
+                startStopBtn.classList.remove('btn-primary');
+                startStopBtn.classList.add('btn-danger');
+                isMainClockRunning = true;
+            }
+        }
+
+        /**
+         * Stops the main clock.
+         */
+        function stopMainClock() {
+            if (isMainClockRunning) {
+                clearInterval(mainClockTimerInterval);
+                startStopBtn.textContent = 'Start';
+                startStopBtn.classList.remove('btn-danger');
+                startStopBtn.classList.add('btn-primary');
+                isMainClockRunning = false;
+            }
+        }
+
+        /**
+         * Resets the main clock.
+         */
+        function resetMainClock() {
+            stopMainClock();
+            mainClockElapsedTime = 0;
+            clockTimeDisplay.textContent = '00:00';
+            clockProgramInfoDisplay.textContent = '';
+        }
+
+        /**
+         * Toggles full-screen mode for the app container.
+         */
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                appContainer.requestFullscreen().then(() => {
+                    document.body.classList.add('fullscreen-active');
+                }).catch(err => {
+                    console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                    // Display a user-friendly message about fullscreen not being available
+                    const currentStatusDisplay = activeProgramType === 'simple' ? simpleProgramStatusDisplay : bracketProgramStatusDisplay;
+                    currentStatusDisplay.textContent = 'Fullscreen not allowed by browser/environment policy.';
+                    // Clear the message after a few seconds
+                    setTimeout(() => {
+                        updateProgramStatusDisplay(); // Revert to normal program status
+                    }, 5000);
+                });
+            } else {
+                document.exitFullscreen().then(() => {
+                    document.body.classList.remove('fullscreen-active');
+                }).catch(err => {
+                    console.error(`Error attempting to exit full-screen mode: ${err.message} (${err.name})`);
+                });
+            }
+        }
+
+        // Event Listeners for Main Clock Controls
+        startStopBtn.addEventListener('click', () => {
+            if (isMainClockRunning) {
+                stopMainClock();
+            } else {
+                startMainClock();
+            }
+        });
+        resetBtn.addEventListener('click', resetMainClock);
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+        // Listen for fullscreen change events to update button text/class
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                fullscreenBtn.textContent = 'Exit Fullscreen';
+            } else {
+                fullscreenBtn.textContent = 'Fullscreen';
+            }
+        });
+
+        // --- Tab Switching Logic ---
+        function showProgramSection(sectionId) {
+            simpleProgramSection.classList.remove('active');
+            bracketProgramSection.classList.remove('active');
+            simpleProgramTabBtn.classList.remove('active');
+            bracketProgramTabBtn.classList.remove('active');
+
+            if (sectionId === 'simple') {
+                simpleProgramSection.classList.add('active');
+                simpleProgramTabBtn.classList.add('active');
+            } else if (sectionId === 'bracket') {
+                bracketProgramSection.classList.add('active');
+                bracketProgramTabBtn.classList.add('active');
+            }
+        }
+
+        simpleProgramTabBtn.addEventListener('click', () => showProgramSection('simple'));
+        bracketProgramTabBtn.addEventListener('click', () => showProgramSection('bracket'));
+
+        // --- Simple Program Logic ---
+
+        /**
+         * Calculates the total duration of one simple interval in milliseconds.
+         * @returns {boolean} True if duration is valid, false otherwise.
+         */
+        function calculateSimpleIntervalDuration() {
+            const min = parseInt(simpleIntervalMinInput.value) * 60 * 1000;
+            const sec = parseInt(simpleIntervalSecInput.value) * 1000;
+            simpleTotalIntervalDurationMs = min + sec;
+            if (simpleTotalIntervalDurationMs <= 0) {
+                simpleProgramStatusDisplay.textContent = 'Interval duration must be greater than 0.';
+                return false;
+            }
+            return true;
+        }
+
+        /**
+         * Updates the simple program status display and main clock.
+         */
+        function updateSimpleProgramStatus() {
+            if (programIsRunning && activeProgramType === 'simple') {
+                const elapsedInInterval = programElapsedTime % simpleTotalIntervalDurationMs;
+                const remainingInInterval = simpleTotalIntervalDurationMs - elapsedInInterval;
+
+                simpleProgramStatusDisplay.textContent = `Round ${simpleCurrentRound}/${simpleTotalRounds}, Rep ${simpleCurrentRep}/${simpleTotalReps}`;
+                clockTimeDisplay.textContent = formatTime(remainingInInterval);
+                clockProgramInfoDisplay.textContent = `R: ${simpleCurrentRound}/${simpleTotalRounds} | P: ${simpleCurrentRep}/${simpleTotalReps}`;
+            } else if (!programIsRunning && activeProgramType === 'simple') {
+                simpleProgramStatusDisplay.textContent = 'Program Ready';
+                clockProgramInfoDisplay.textContent = '';
+            }
+        }
+
+        /**
+         * Runs the simple program logic.
+         */
+        function runSimpleProgram() {
+            programElapsedTime = Date.now() - programStartTime;
+
+            // Check if current interval/rep is complete
+            if (programElapsedTime >= (simpleCurrentRep * simpleTotalIntervalDurationMs)) {
+                simpleCurrentRep++;
+                if (simpleCurrentRep > simpleTotalReps) {
+                    simpleCurrentRep = 1; // Reset rep count for the next round
+                    simpleCurrentRound++;
+                    if (simpleCurrentRound > simpleTotalRounds) {
+                        // Program finished
+                        stopProgram();
+                        simpleProgramStatusDisplay.textContent = 'Program Complete!';
+                        return;
+                    }
+                }
+                // Reset program start time for the new rep/round to ensure accurate timing
+                programStartTime = Date.now();
+                programElapsedTime = 0;
+            }
+            updateSimpleProgramStatus();
+        }
+
+        /**
+         * Starts the simple program.
+         */
+        function startSimpleProgram() {
+            if (programIsRunning) return; // Already running
+
+            if (!calculateSimpleIntervalDuration()) return; // Validate interval duration
+
+            simpleTotalReps = parseInt(simpleRepsInput.value);
+            simpleTotalRounds = parseInt(simpleRoundsInput.value);
+
+            if (simpleTotalReps <= 0 || simpleTotalRounds <= 0) {
+                simpleProgramStatusDisplay.textContent = 'Reps and Rounds must be greater than 0.';
+                return;
+            }
+
+            stopMainClock(); // Stop the main clock when a program starts
+            activeProgramType = 'simple';
+
+            // Reset program state
+            simpleCurrentRound = 1;
+            simpleCurrentRep = 1;
+            programStartTime = Date.now();
+            programElapsedTime = 0;
+
+            programTimerInterval = setInterval(runSimpleProgram, 100); // Check every 100ms
+            programIsRunning = true;
+            startSimpleProgramBtn.textContent = 'Pause Program';
+            startSimpleProgramBtn.classList.remove('btn-primary');
+            startSimpleProgramBtn.classList.add('btn-danger');
+            simpleProgramStatusDisplay.textContent = `Program Started: Round ${simpleCurrentRound}/${simpleTotalRounds}, Rep ${simpleCurrentRep}/${simpleTotalReps}`;
+            updateSimpleProgramStatus(); // Initial status update
+        }
+
+        /**
+         * Resets the simple program.
+         */
+        function resetSimpleProgram() {
+            if (programIsRunning && activeProgramType === 'simple') {
+                clearInterval(programTimerInterval);
+            }
+            programIsRunning = false;
+            activeProgramType = 'none';
+
+            simpleCurrentRound = 0;
+            simpleCurrentRep = 0;
+            programElapsedTime = 0;
+            simpleProgramStatusDisplay.textContent = 'Program Ready';
+            startSimpleProgramBtn.textContent = 'Start Program';
+            startSimpleProgramBtn.classList.remove('btn-danger');
+            startSimpleProgramBtn.classList.add('btn-primary');
+
+            // Reset input values to defaults
+            simpleIntervalMinInput.value = 0;
+            simpleIntervalSecInput.value = 10;
+            simpleRepsInput.value = 1;
+            simpleRoundsInput.value = 1;
+
+            resetMainClock(); // Reset and restart the main clock
+        }
+
+        // Event Listeners for Simple Program Controls
+        startSimpleProgramBtn.addEventListener('click', () => {
+            if (programIsRunning && activeProgramType === 'simple') {
+                clearInterval(programTimerInterval);
+                programIsRunning = false;
+                startSimpleProgramBtn.textContent = 'Start Program';
+                startSimpleProgramBtn.classList.remove('btn-danger');
+                startSimpleProgramBtn.classList.add('btn-primary');
+                updateSimpleProgramStatus(); // Update status to reflect pause
+                startMainClock(); // Resume main clock
+            } else {
+                startSimpleProgram();
+            }
+        });
+        resetSimpleProgramBtn.addEventListener('click', resetSimpleProgram);
+
+
+        // --- Bracket Program Logic ---
+
+        /**
+         * Adds a new interval input group to the bracket definition.
+         */
+        function addIntervalToBracket() {
+            const index = bracketIntervalsContainer.children.length;
+            const bracketItemDiv = document.createElement('div');
+            bracketItemDiv.classList.add('bracket-item', 'w-full');
+            bracketItemDiv.setAttribute('data-index', index);
+
+            bracketItemDiv.innerHTML = `
+                <button class="remove-btn" data-index="${index}">X</button>
+                <div class="input-group flex-1">
+                    <label>Interval ${index + 1} Minutes:</label>
+                    <input type="number" class="interval-min-input text-center" value="0" min="0">
+                </div>
+                <div class="input-group flex-1">
+                    <label>Interval ${index + 1} Seconds:</label>
+                    <input type="number" class="interval-sec-input text-center" value="10" min="0" max="59">
+                </div>
+                <!-- Milliseconds input removed as per request -->
+                <div class="input-group flex-1">
+                    <label>Reps for Interval ${index + 1}:</label>
+                    <input type="number" class="interval-reps-input text-center" value="1" min="1">
+                </div>
+            `;
+            bracketIntervalsContainer.appendChild(bracketItemDiv);
+
+            // Add event listener for the remove button
+            bracketItemDiv.querySelector('.remove-btn').addEventListener('click', (e) => {
+                const itemToRemoveIndex = parseInt(e.target.dataset.index);
+                bracketIntervalsContainer.removeChild(bracketItemDiv);
+                // Re-index remaining items if necessary (optional, but good for display)
+                Array.from(bracketIntervalsContainer.children).forEach((child, newIndex) => {
+                    child.setAttribute('data-index', newIndex);
+                    child.querySelector('.remove-btn').dataset.index = newIndex;
+                    child.querySelectorAll('label').forEach(label => {
+                        label.textContent = label.textContent.replace(/Interval \d+/, `Interval ${newIndex + 1}`);
+                    });
+                });
+            });
+        }
+
+        /**
+         * Reads the bracket definition from the UI and validates it.
+         * Populates the `bracketDefinition` array and `bracketTotalRounds`.
+         * @returns {boolean} True if definition is valid, false otherwise.
+         */
+        function readBracketDefinition() {
+            bracketDefinition = [];
+            bracketTotalRounds = parseInt(bracketRoundsInput.value);
+
+            if (isNaN(bracketTotalRounds) || bracketTotalRounds <= 0) {
+                bracketProgramStatusDisplay.textContent = 'Number of Bracket Rounds must be a positive number.';
+                return false;
+            }
+
+            const bracketItems = bracketIntervalsContainer.querySelectorAll('.bracket-item');
+            if (bracketItems.length === 0) {
+                bracketProgramStatusDisplay.textContent = 'Please add at least one interval to the bracket.';
+                return false;
+            }
+
+            for (const item of bracketItems) {
+                const min = parseInt(item.querySelector('.interval-min-input').value);
+                const sec = parseInt(item.querySelector('.interval-sec-input').value);
+                // Milliseconds input removed, so default to 0 for duration calculation
+                const ms = 0; // parseInt(item.querySelector('.interval-ms-input').value);
+                const reps = parseInt(item.querySelector('.interval-reps-input').value);
+
+                const durationMs = (min * 60 * 1000) + (sec * 1000) + ms;
+
+                if (isNaN(durationMs) || durationMs <= 0) {
+                    bracketProgramStatusDisplay.textContent = 'All interval durations must be positive.';
+                    return false;
+                }
+                if (isNaN(reps) || reps <= 0) {
+                    bracketProgramStatusDisplay.textContent = 'All reps must be positive numbers.';
+                    return false;
+                }
+
+                bracketDefinition.push({
+                    durationMs: durationMs,
+                    reps: reps
+                });
+            }
+            return true;
+        }
+
+        /**
+         * Updates the bracket program status display and main clock.
+         */
+        function updateBracketProgramStatus() {
+            if (programIsRunning && activeProgramType === 'bracket' && bracketDefinition.length > 0) {
+                const currentItem = bracketDefinition[bracketCurrentItemIndex];
+                const elapsedInCurrentRep = programElapsedTime % currentItem.durationMs;
+                const remainingInCurrentRep = currentItem.durationMs - elapsedInCurrentRep;
+
+                bracketProgramStatusDisplay.textContent = `Round ${bracketCurrentRound}/${bracketTotalRounds}, Interval ${bracketCurrentItemIndex + 1}/${bracketDefinition.length}, Rep ${bracketCurrentRepInItem}/${currentItem.reps}`;
+                clockTimeDisplay.textContent = formatTime(remainingInCurrentRep);
+                clockProgramInfoDisplay.textContent = `R: ${bracketCurrentRound}/${bracketTotalRounds} | I: ${bracketCurrentItemIndex + 1}/${bracketDefinition.length} | P: ${bracketCurrentRepInItem}/${currentItem.reps}`;
+            } else if (!programIsRunning && activeProgramType === 'bracket') {
+                bracketProgramStatusDisplay.textContent = 'Program Ready';
+                clockProgramInfoDisplay.textContent = '';
+            }
+        }
+
+        /**
+         * Runs the bracket program logic.
+         */
+        function runBracketProgram() {
+            programElapsedTime = Date.now() - programStartTime;
+
+            // Get the current interval item being executed
+            const currentItem = bracketDefinition[bracketCurrentItemIndex];
+
+            // Check if the current repetition of the current interval is complete
+            if (programElapsedTime >= (bracketCurrentRepInItem * currentItem.durationMs)) {
+                bracketCurrentRepInItem++; // Move to the next rep
+
+                if (bracketCurrentRepInItem > currentItem.reps) {
+                    // Current interval item is complete, move to next interval in bracket
+                    bracketCurrentRepInItem = 1; // Reset rep count for the new interval
+                    bracketCurrentItemIndex++; // Move to next interval item
+
+                    if (bracketCurrentItemIndex >= bracketDefinition.length) {
+                        // All intervals in the current bracket round are complete, move to next bracket round
+                        bracketCurrentItemIndex = 0; // Reset to the first interval for the next round
+                        bracketCurrentRound++; // Move to the next bracket round
+
+                        if (bracketCurrentRound > bracketTotalRounds) {
+                            // All bracket rounds are complete - program finished
+                            stopProgram();
+                            bracketProgramStatusDisplay.textContent = 'Program Complete!';
+                            return;
+                        }
+                    }
+                    // Reset program start time for the new interval/round to ensure accurate timing
+                    programStartTime = Date.now();
+                    programElapsedTime = 0;
+                }
+            }
+            updateBracketProgramStatus(); // Always update status and main clock display
+        }
+
+        /**
+         * Starts the bracket program.
+         */
+        function startBracketProgram() {
+            if (programIsRunning) return; // Already running
+
+            if (!readBracketDefinition()) {
+                // Validation failed, message already set in readBracketDefinition
+                return;
+            }
+
+            stopMainClock(); // Stop the main clock when a program starts
+            activeProgramType = 'bracket';
+
+            // Reset program state
+            bracketCurrentRound = 1;
+            bracketCurrentItemIndex = 0;
+            bracketCurrentRepInItem = 1;
+            programStartTime = Date.now();
+            programElapsedTime = 0;
+
+            programTimerInterval = setInterval(runBracketProgram, 100); // Check every 100ms
+            programIsRunning = true;
+            startBracketProgramBtn.textContent = 'Pause Program';
+            startBracketProgramBtn.classList.remove('btn-primary');
+            startBracketProgramBtn.classList.add('btn-danger');
+            bracketProgramStatusDisplay.textContent = `Program Started: Round ${bracketCurrentRound}/${bracketTotalRounds}, Interval ${bracketCurrentItemIndex + 1}/${bracketDefinition.length}, Rep ${bracketCurrentRepInItem}/${bracketDefinition[bracketCurrentItemIndex].reps}`;
+            updateBracketProgramStatus(); // Initial status update
+        }
+
+        /**
+         * Resets the bracket program.
+         */
+        function resetBracketProgram() {
+            if (programIsRunning && activeProgramType === 'bracket') {
+                clearInterval(programTimerInterval);
+            }
+            programIsRunning = false;
+            activeProgramType = 'none';
+
+            bracketCurrentRound = 0;
+            bracketCurrentItemIndex = 0;
+            bracketCurrentRepInItem = 0;
+            programElapsedTime = 0;
+            bracketProgramStatusDisplay.textContent = 'Program Ready';
+            startBracketProgramBtn.textContent = 'Start Program';
+            startBracketProgramBtn.classList.remove('btn-danger');
+            startBracketProgramBtn.classList.add('btn-primary');
+
+            // Clear all dynamically added bracket intervals
+            bracketIntervalsContainer.innerHTML = '';
+            bracketDefinition = []; // Clear the definition array
+            bracketRoundsInput.value = 1; // Reset bracket rounds input
+
+            resetMainClock(); // Reset and restart the main clock
+        }
+
+        // Event Listeners for Bracket Program Controls
+        addIntervalToBracketBtn.addEventListener('click', addIntervalToBracket);
+        startBracketProgramBtn.addEventListener('click', () => {
+            if (programIsRunning && activeProgramType === 'bracket') {
+                clearInterval(programTimerInterval);
+                programIsRunning = false;
+                startBracketProgramBtn.textContent = 'Start Program';
+                startBracketProgramBtn.classList.remove('btn-danger');
+                startBracketProgramBtn.classList.add('btn-primary');
+                updateBracketProgramStatus(); // Update status to reflect pause
+                startMainClock(); // Resume main clock
+            } else {
+                startBracketProgram();
+            }
+        });
+        resetBracketProgramBtn.addEventListener('click', resetBracketProgram);
+
+        // --- Global Program Control (Stop/Pause for any active program) ---
+        function stopProgram() {
+            if (activeProgramType === 'simple') {
+                clearInterval(programTimerInterval);
+                programIsRunning = false;
+                startSimpleProgramBtn.textContent = 'Start Program';
+                startSimpleProgramBtn.classList.remove('btn-danger');
+                startSimpleProgramBtn.classList.add('btn-primary');
+                updateSimpleProgramStatus();
+            } else if (activeProgramType === 'bracket') {
+                clearInterval(programTimerInterval);
+                programIsRunning = false;
+                startBracketProgramBtn.textContent = 'Start Program';
+                startBracketProgramBtn.classList.remove('btn-danger');
+                startBracketProgramBtn.classList.add('btn-primary');
+                updateBracketProgramStatus();
+            }
+            activeProgramType = 'none';
+            startMainClock(); // Resume the main clock
+        }
+
+        function updateProgramStatusDisplay() {
+            if (activeProgramType === 'simple') {
+                updateSimpleProgramStatus();
+            } else if (activeProgramType === 'bracket') {
+                updateBracketProgramStatus();
+            } else {
+                // If no program is running, ensure main clock is active
+                updateMainClock();
+            }
+        }
+
+        // Initial setup
+        showProgramSection('simple'); // Show simple program by default
+        startMainClock(); // Start the main clock initially
+    </script>
+</body>
+</html>
