@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pace Clock Emulator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #2d3748; /* Slightly lighter dark background */
+            border-radius: 1.5rem; /* More rounded corners */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2); /* Deeper shadow */
+            padding: 2.5rem; /* More padding */
+            width: 100%;
+            max-width: 900px; /* Increased max-width */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+        .clock-display {
+            font-size: 5rem; /* Larger font size */
+            font-weight: 700;
+            color: #48bb78; /* Green color for clock */
+            text-shadow: 0 0 15px rgba(72, 187, 120, 0.7); /* Glow effect */
+            letter-spacing: 0.1em;
+            min-width: 350px; /* Ensure a minimum width */
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .clock-time {
+            font-size: 1em; /* Inherit from parent */
+        }
+        .clock-program-info {
+            font-size: 0.3em; /* Smaller font for program info */
+            font-weight: 400;
+            color: #a0aec0;
+            margin-top: 0.5rem;
+        }
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Responsive grid */
+            gap: 1rem;
+            width: 100%;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem; /* Rounded buttons */
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            border: none;
+            outline: none;
+        }
+        .btn-primary {
+            background-color: #4299e1; /* Blue */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #3182ce;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.4), 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+        .btn-danger {
+            background-color: #e53e3e; /* Red */
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c53030;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.4), 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+        .btn-secondary {
+            background-color: #a0aec0; /* Gray */
+            color: #2d3748;
+        }
+        .btn-secondary:hover {
+            background-color: #718096;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.4), 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+        }
+        .input-group label {
+            font-size: 0.875rem;
+            color: #a0aec0;
+        }
+        .input-group input {
+            background-color: #4a5568;
+            border: 1px solid #667eea; /* Purple border */
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            color: #e2e8f0;
+            font-size: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease-in-out;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #81e6d9; /* Teal focus */
+            box-shadow: 0 0 0 3px rgba(129, 230, 217, 0.5);
+        }
+        .interval-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+            width: 100%;
+        }
+        .status-display {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #81e6d9; /* Teal */
+            text-align: center;
+        }
+        /* Fullscreen styles */
+        .fullscreen-active .container {
+            width: 100vw;
+            height: 100vh;
+            max-width: none;
+            border-radius: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+        }
+        .fullscreen-active .clock-display {
+            font-size: 15vw; /* Responsive font size for fullscreen */
+        }
+        .fullscreen-active .controls,
+        .fullscreen-active .program-tabs,
+        .fullscreen-active .program-section,
+        .fullscreen-active .status-display {
+            display: none !important; /* Hide controls and program sections in fullscreen */
+        }
+        .fullscreen-active #fullscreen-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: block !important; /* Ensure it's visible */
+        }
+        .bracket-item {
+            background-color: #3b4557;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: flex-end;
+            position: relative;
+        }
+        .bracket-item .remove-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #e53e3e;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border: none;
+        }
+        .bracket-item .remove-btn:hover {
+            background-color: #c53030;
+        }
+        .program-tabs {
+            display: flex;
+            width: 100%;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .tab-btn {
+            background-color: #4a5568;
+            color: #e2e8f0;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s;
+        }
+        .tab-btn.active {
+            background-color: #667eea; /* Highlight active tab */
+            color: white;
+        }
+        .program-section {
+            display: none; /* Hidden by default */
+            width: 100%;
+            flex-direction: column; /* Ensure content stacks */
+            align-items: center;
+            gap: 2rem;
+            padding: 2rem;
+            background-color: #2d3748;
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
+        }
+        .program-section.active {
+            display: flex; /* Show active section */
+        }
+
+        /* Styles for Workout Sequence Builder */
+        .sequence-block {
+            background-color: #3b4557;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            position: relative;
+            border: 1px solid #667eea;
+            width: 100%;
+        }
+        .sequence-block .remove-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #e53e3e;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border: none;
+        }
+        .sequence-block .remove-btn:hover {
+            background-color: #c53030;
+        }
+        .sequence-block-header {
+            font-weight: 600;
+            color: #81e6d9;
+            margin-bottom: 0.5rem;
+        }
+        .sequence-block-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+        .sequence-block-content .input-group {
+            flex: 1;
+            min-width: 100px;
+        }
+        .nested-bracket-container {
+            border: 1px dashed #a0aec0;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0.5rem;
+            background-color: #4a5568;
+        }
+        .nested-bracket-container .bracket-item {
+            background-color: #5a67d8; /* Different color for nested items */
+        }
+
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+            }
+            .clock-display {
+                font-size: 3.5rem; /* Adjust for smaller screens */
+            }
+            .controls-grid {
+                grid-template-columns: 1fr; /* Stack buttons on small screens */
+            }
+            .interval-inputs {
+                grid-template-columns: 1fr; /* Stack inputs on small screens */
+            }
+            .bracket-item {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .bracket-item .input-group {
+                width: 100%;
+            }
+            .sequence-block-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .sequence-block-content .input-group {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container" class="container">
+        <!-- Main Pace Clock Display -->
+        <div id="clock" class="clock-display">
+            <span id="clockTime" class="clock-time">00:00</span>
+            <span id="clockProgramInfo" class="clock-program-info"></span>
+        </div>
+
+        <!-- Main Clock Controls -->
+        <div class="controls w-full flex flex-col items-center gap-4">
+            <div class="controls-grid">
+                <button id="startStopBtn" class="btn btn-primary">Start</button>
+                <button id="resetBtn" class="btn btn-danger">Reset</button>
+                <button id="fullscreenBtn" class="btn btn-secondary">Fullscreen</button>
+            </div>
+        </div>
+
+        <!-- Workout Sequence Section (Now the only program section) -->
+        <div id="sequenceProgramSection" class="program-section active">
+            <h2 class="text-2xl font-bold text-teal-300 mb-4">Workout Sequence Builder</h2>
+
+            <div id="sequenceBlocksContainer" class="w-full">
+                <!-- Sequence blocks will be added here dynamically -->
+            </div>
+
+            <div class="controls-grid mt-4">
+                <button id="addSimpleBlockBtn" class="btn btn-secondary">Add Simple Interval Block</button>
+                <button id="addBracketBlockBtn" class="btn btn-secondary">Add Bracket Block</button>
+            </div>
+
+            <div class="controls-grid mt-4">
+                <button id="startSequenceProgramBtn" class="btn btn-primary">Start Sequence</button>
+                <button id="resetSequenceProgramBtn" class="btn btn-danger">Reset Sequence</button>
+            </div>
+            <div id="sequenceProgramStatus" class="status-display mt-4">Sequence Ready</div>
+        </div>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const clockDisplay = document.getElementById('clock');
+        const clockTimeDisplay = document.getElementById('clockTime');
+        const clockProgramInfoDisplay = document.getElementById('clockProgramInfo');
+        const startStopBtn = document.getElementById('startStopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const appContainer = document.getElementById('app-container');
+
+        // Workout Sequence elements
+        const sequenceBlocksContainer = document.getElementById('sequenceBlocksContainer');
+        const addSimpleBlockBtn = document.getElementById('addSimpleBlockBtn');
+        const addBracketBlockBtn = document.getElementById('addBracketBlockBtn');
+        const startSequenceProgramBtn = document.getElementById('startSequenceProgramBtn');
+        const resetSequenceProgramBtn = document.getElementById('resetSequenceProgramBtn');
+        const sequenceProgramStatusDisplay = document.getElementById('sequenceProgramStatus');
+
+        // Main Clock Variables
+        let mainClockStartTime = 0;
+        let mainClockElapsedTime = 0;
+        let mainClockTimerInterval;
+        let isMainClockRunning = false;
+
+        // Program State Variables
+        let programTimerInterval;
+        let programStartTime = 0;
+        let programElapsedTime = 0;
+        let programIsRunning = false;
+        let activeProgramType = 'none'; // Will only be 'sequence' or 'none' now
+
+        // Workout Sequence Specific Variables
+        let workoutSequence = []; // Array of workout blocks
+        let currentSequenceBlockIndex = 0;
+        let currentSequenceBlockState = {}; // To hold state for the currently running block (simple or bracket)
+
+
+        /**
+         * Formats a time in milliseconds into MM:SS format.
+         * @param {number} ms - Time in milliseconds.
+         * @returns {string} Formatted time string.
+         */
+        function formatTime(ms) {
+            const minutes = Math.floor(ms / 60000);
+            const seconds = Math.floor((ms % 60000) / 1000);
+
+            const formattedMinutes = String(minutes).padStart(2, '0');
+            const formattedSeconds = String(seconds).padStart(2, '0');
+
+            return `${formattedMinutes}:${formattedSeconds}`;
+        }
+
+        /**
+         * Updates the main clock display.
+         * This function is only responsible for the main clock when no program is running.
+         */
+        function updateMainClock() {
+            if (!programIsRunning) {
+                mainClockElapsedTime = Date.now() - mainClockStartTime;
+                if (mainClockElapsedTime >= 3600000) { // Cap at 59:59 (60 minutes = 3600000 ms)
+                    mainClockElapsedTime = 3599000; // Set to 59:59 to avoid overflow issues
+                    stopMainClock(); // Stop the clock if it reaches the limit
+                }
+                clockTimeDisplay.textContent = formatTime(mainClockElapsedTime);
+                clockProgramInfoDisplay.textContent = ''; // Clear program info
+            }
+        }
+
+        /**
+         * Starts the main clock.
+         */
+        function startMainClock() {
+            if (!isMainClockRunning) {
+                mainClockStartTime = Date.now() - mainClockElapsedTime;
+                mainClockTimerInterval = setInterval(updateMainClock, 1000); // Update every 1000ms (1 second)
+                startStopBtn.textContent = 'Stop';
+                startStopBtn.classList.remove('btn-primary');
+                startStopBtn.classList.add('btn-danger');
+                isMainClockRunning = true;
+            }
+        }
+
+        /**
+         * Stops the main clock.
+         */
+        function stopMainClock() {
+            if (isMainClockRunning) {
+                clearInterval(mainClockTimerInterval);
+                startStopBtn.textContent = 'Start';
+                startStopBtn.classList.remove('btn-danger');
+                startStopBtn.classList.add('btn-primary');
+                isMainClockRunning = false;
+            }
+        }
+
+        /**
+         * Resets the main clock.
+         */
+        function resetMainClock() {
+            stopMainClock();
+            mainClockElapsedTime = 0;
+            clockTimeDisplay.textContent = '00:00';
+            clockProgramInfoDisplay.textContent = '';
+        }
+
+        /**
+         * Toggles full-screen mode for the app container.
+         */
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                appContainer.requestFullscreen().then(() => {
+                    document.body.classList.add('fullscreen-active');
+                }).catch(err => {
+                    console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                    // Display a user-friendly message about fullscreen not being available
+                    sequenceProgramStatusDisplay.textContent = 'Fullscreen not allowed by browser/environment policy.';
+                    // Clear the message after a few seconds
+                    setTimeout(() => {
+                        updateProgramStatusDisplay(); // Revert to normal program status
+                    }, 5000);
+                });
+            } else {
+                document.exitFullscreen().then(() => {
+                    document.body.classList.remove('fullscreen-active');
+                }).catch(err => {
+                    console.error(`Error attempting to exit full-screen mode: ${err.message} (${err.name})`);
+                });
+            }
+        }
+
+        // Event Listeners for Main Clock Controls
+        startStopBtn.addEventListener('click', () => {
+            if (isMainClockRunning) {
+                stopMainClock();
+            } else {
+                startMainClock();
+            }
+        });
+        resetBtn.addEventListener('click', resetMainClock);
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+        // Listen for fullscreen change events to update button text/class
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                fullscreenBtn.textContent = 'Exit Fullscreen';
+            } else {
+                fullscreenBtn.textContent = 'Fullscreen';
+            }
+        });
+
+        // --- Workout Sequence Logic ---
+
+        /**
+         * Adds a simple interval block to the workout sequence.
+         */
+        function addSimpleBlockToSequence() {
+            const blockIndex = sequenceBlocksContainer.children.length;
+            const blockDiv = document.createElement('div');
+            blockDiv.classList.add('sequence-block');
+            blockDiv.setAttribute('data-block-index', blockIndex);
+            blockDiv.innerHTML = `
+                <button class="remove-btn" data-block-index="${blockIndex}">X</button>
+                <div class="sequence-block-header">Simple Interval Block #${blockIndex + 1}</div>
+                <div class="sequence-block-content">
+                    <div class="input-group">
+                        <label>Minutes:</label>
+                        <input type="number" class="simple-block-min text-center" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label>Seconds:</label>
+                        <input type="number" class="simple-block-sec text-center" value="10" min="0" max="59">
+                    </div>
+                    <div class="input-group">
+                        <label>Reps:</label>
+                        <input type="number" class="simple-block-reps text-center" value="1" min="1">
+                    </div>
+                    <div class="input-group">
+                        <label>Rounds:</label>
+                        <input type="number" class="simple-block-rounds text-center" value="1" min="1">
+                    </div>
+                </div>
+            `;
+            sequenceBlocksContainer.appendChild(blockDiv);
+            addRemoveBlockListener(blockDiv);
+        }
+
+        /**
+         * Adds a bracket block to the workout sequence.
+         */
+        function addBracketBlockToSequence() {
+            const blockIndex = sequenceBlocksContainer.children.length;
+            const blockDiv = document.createElement('div');
+            blockDiv.classList.add('sequence-block');
+            blockDiv.setAttribute('data-block-index', blockIndex);
+            blockDiv.innerHTML = `
+                <button class="remove-btn" data-block-index="${blockIndex}">X</button>
+                <div class="sequence-block-header">Bracket Block #${blockIndex + 1}</div>
+                <div class="input-group w-full">
+                    <label>Bracket Rounds:</label>
+                    <input type="number" class="bracket-block-rounds text-center" value="1" min="1">
+                </div>
+                <div class="nested-bracket-container w-full">
+                    <div class="nested-bracket-intervals-container">
+                        <!-- Nested bracket intervals will go here -->
+                    </div>
+                    <button class="btn btn-secondary mt-4 add-nested-interval-btn w-full">Add Interval to Bracket</button>
+                </div>
+            `;
+            sequenceBlocksContainer.appendChild(blockDiv);
+            addRemoveBlockListener(blockDiv);
+
+            // Add listener for adding nested intervals
+            const nestedIntervalsContainer = blockDiv.querySelector('.nested-bracket-intervals-container');
+            blockDiv.querySelector('.add-nested-interval-btn').addEventListener('click', () => {
+                addNestedIntervalToBracket(nestedIntervalsContainer);
+            });
+        }
+
+        /**
+         * Adds a remove listener to a sequence block.
+         * @param {HTMLElement} blockDiv The block element.
+         */
+        function addRemoveBlockListener(blockDiv) {
+            blockDiv.querySelector('.remove-btn').addEventListener('click', (e) => {
+                const blockToRemoveIndex = parseInt(e.target.dataset.blockIndex);
+                sequenceBlocksContainer.removeChild(blockDiv);
+                // Re-index remaining blocks
+                Array.from(sequenceBlocksContainer.children).forEach((child, newIndex) => {
+                    child.setAttribute('data-block-index', newIndex);
+                    child.querySelector('.remove-btn').dataset.blockIndex = newIndex;
+                    child.querySelector('.sequence-block-header').textContent = child.querySelector('.sequence-block-header').textContent.replace(/#\d+/, `#${newIndex + 1}`);
+                });
+            });
+        }
+
+        /**
+         * Adds a new interval input group to a nested bracket definition.
+         * @param {HTMLElement} container The container for nested intervals.
+         */
+        function addNestedIntervalToBracket(container) {
+            const index = container.children.length;
+            const nestedItemDiv = document.createElement('div');
+            nestedItemDiv.classList.add('bracket-item', 'w-full');
+            nestedItemDiv.setAttribute('data-nested-index', index);
+
+            nestedItemDiv.innerHTML = `
+                <button class="remove-btn" data-nested-index="${index}">X</button>
+                <div class="input-group flex-1">
+                    <label>Minutes:</label>
+                    <input type="number" class="nested-interval-min text-center" value="0" min="0">
+                </div>
+                <div class="input-group flex-1">
+                    <label>Seconds:</label>
+                    <input type="number" class="nested-interval-sec text-center" value="10" min="0" max="59">
+                </div>
+                <div class="input-group flex-1">
+                    <label>Reps:</label>
+                    <input type="number" class="nested-interval-reps text-center" value="1" min="1">
+                </div>
+            `;
+            container.appendChild(nestedItemDiv);
+
+            nestedItemDiv.querySelector('.remove-btn').addEventListener('click', (e) => {
+                const itemToRemoveIndex = parseInt(e.target.dataset.nestedIndex);
+                container.removeChild(nestedItemDiv);
+                // Re-index remaining nested items
+                Array.from(container.children).forEach((child, newIndex) => {
+                    child.setAttribute('data-nested-index', newIndex);
+                    child.querySelector('.remove-btn').dataset.nestedIndex = newIndex;
+                });
+            });
+        }
+
+        /**
+         * Reads the workout sequence definition from the UI.
+         * @returns {boolean} True if definition is valid, false otherwise.
+         */
+        function readWorkoutSequenceDefinition() {
+            workoutSequence = [];
+            const blocks = sequenceBlocksContainer.querySelectorAll('.sequence-block');
+
+            if (blocks.length === 0) {
+                sequenceProgramStatusDisplay.textContent = 'Please add at least one block to the sequence.';
+                return false;
+            }
+
+            for (const block of blocks) {
+                const headerText = block.querySelector('.sequence-block-header').textContent;
+                if (headerText.includes('Simple Interval Block')) {
+                    const min = parseInt(block.querySelector('.simple-block-min').value);
+                    const sec = parseInt(block.querySelector('.simple-block-sec').value);
+                    const reps = parseInt(block.querySelector('.simple-block-reps').value);
+                    const rounds = parseInt(block.querySelector('.simple-block-rounds').value);
+                    const durationMs = (min * 60 * 1000) + (sec * 1000);
+
+                    if (isNaN(durationMs) || durationMs <= 0 || isNaN(reps) || reps <= 0 || isNaN(rounds) || rounds <= 0) {
+                        sequenceProgramStatusDisplay.textContent = `Invalid values in Simple Interval Block #${parseInt(block.dataset.blockIndex) + 1}.`;
+                        return false;
+                    }
+                    workoutSequence.push({ type: 'simple', durationMs, reps, rounds });
+                } else if (headerText.includes('Bracket Block')) {
+                    const bracketRounds = parseInt(block.querySelector('.bracket-block-rounds').value);
+                    if (isNaN(bracketRounds) || bracketRounds <= 0) {
+                        sequenceProgramStatusDisplay.textContent = `Invalid bracket rounds in Bracket Block #${parseInt(block.dataset.blockIndex) + 1}.`;
+                        return false;
+                    }
+
+                    const nestedIntervals = [];
+                    const nestedItems = block.querySelectorAll('.nested-bracket-intervals-container .bracket-item');
+                    if (nestedItems.length === 0) {
+                        sequenceProgramStatusDisplay.textContent = `Bracket Block #${parseInt(block.dataset.blockIndex) + 1} must contain at least one interval.`;
+                        return false;
+                    }
+
+                    for (const nestedItem of nestedItems) {
+                        const min = parseInt(nestedItem.querySelector('.nested-interval-min').value);
+                        const sec = parseInt(nestedItem.querySelector('.nested-interval-sec').value);
+                        const reps = parseInt(nestedItem.querySelector('.nested-interval-reps').value);
+                        const durationMs = (min * 60 * 1000) + (sec * 1000);
+
+                        if (isNaN(durationMs) || durationMs <= 0 || isNaN(reps) || reps <= 0) {
+                            sequenceProgramStatusDisplay.textContent = `Invalid values in nested interval within Bracket Block #${parseInt(block.dataset.blockIndex) + 1}.`;
+                            return false;
+                        }
+                        nestedIntervals.push({ durationMs, reps });
+                    }
+                    workoutSequence.push({ type: 'bracket', bracketRounds, intervals: nestedIntervals });
+                }
+            }
+            return true;
+        }
+
+        /**
+         * Updates the workout sequence program status display and main clock.
+         */
+        function updateSequenceProgramStatus() {
+            if (!programIsRunning || activeProgramType !== 'sequence' || workoutSequence.length === 0) {
+                sequenceProgramStatusDisplay.textContent = 'Sequence Ready';
+                clockProgramInfoDisplay.textContent = '';
+                return;
+            }
+
+            const currentBlock = workoutSequence[currentSequenceBlockIndex];
+            let infoText = `Block ${currentSequenceBlockIndex + 1}/${workoutSequence.length}`;
+            let remainingTime = 0;
+
+            if (currentBlock.type === 'simple') {
+                // For simple blocks, programElapsedTime tracks total time within the current round of the block
+                const totalDurationForCurrentRep = currentBlock.durationMs;
+                const elapsedInCurrentRep = programElapsedTime % totalDurationForCurrentRep;
+                remainingTime = totalDurationForCurrentRep - elapsedInCurrentRep;
+
+                const currentRep = Math.floor(programElapsedTime / totalDurationForCurrentRep) + 1;
+                infoText += ` (Simple) R: ${currentSequenceBlockState.currentRound}/${currentBlock.rounds} | P: ${currentRep}/${currentBlock.reps}`;
+
+            } else if (currentBlock.type === 'bracket') {
+                const currentNestedInterval = currentBlock.intervals[currentSequenceBlockState.currentBracketItemIndex];
+                const elapsedInNestedRep = programElapsedTime % currentNestedInterval.durationMs;
+                remainingTime = currentNestedInterval.durationMs - elapsedInNestedRep;
+
+                infoText += ` (Bracket) R: ${currentSequenceBlockState.currentBracketRound}/${currentBlock.bracketRounds} | I: ${currentSequenceBlockState.currentBracketItemIndex + 1}/${currentBlock.intervals.length} | P: ${currentSequenceBlockState.currentRepInBracketItem}/${currentNestedInterval.reps}`;
+            }
+
+            sequenceProgramStatusDisplay.textContent = infoText;
+            clockTimeDisplay.textContent = formatTime(remainingTime);
+            clockProgramInfoDisplay.textContent = infoText;
+        }
+
+        /**
+         * Runs the workout sequence program logic.
+         */
+        function runSequenceProgram() {
+            programElapsedTime = Date.now() - programStartTime;
+
+            const currentBlock = workoutSequence[currentSequenceBlockIndex];
+
+            if (currentBlock.type === 'simple') {
+                const totalDurationForCurrentRep = currentBlock.durationMs;
+                const totalRepsForCurrentRound = currentBlock.reps;
+
+                // Check if current rep is complete
+                if (programElapsedTime >= (currentSequenceBlockState.currentRep * totalDurationForCurrentRep)) {
+                    currentSequenceBlockState.currentRep++;
+
+                    if (currentSequenceBlockState.currentRep > totalRepsForCurrentRound) {
+                        // All reps for this simple block's current round are done
+                        currentSequenceBlockState.currentRep = 1; // Reset rep count for the next round
+                        currentSequenceBlockState.currentRound++; // Move to next round of this simple block
+
+                        if (currentSequenceBlockState.currentRound > currentBlock.rounds) {
+                            // All rounds for this simple block are done, move to next sequence block
+                            moveToNextSequenceBlock();
+                        } else {
+                            // Reset program start time for the new round of this simple block
+                            programStartTime = Date.now();
+                            programElapsedTime = 0;
+                        }
+                    } else {
+                        // Reset program start time for the new rep within current round
+                        programStartTime = Date.now();
+                        programElapsedTime = 0;
+                    }
+                }
+            } else if (currentBlock.type === 'bracket') {
+                const currentNestedInterval = currentBlock.intervals[currentSequenceBlockState.currentBracketItemIndex];
+                const totalDurationForCurrentNestedRep = currentNestedInterval.durationMs;
+
+                // Check if current repetition of the current nested interval is complete
+                if (programElapsedTime >= (currentSequenceBlockState.currentRepInBracketItem * totalDurationForCurrentNestedRep)) {
+                    currentSequenceBlockState.currentRepInBracketItem++; // Move to the next rep
+
+                    if (currentSequenceBlockState.currentRepInBracketItem > currentNestedInterval.reps) {
+                        // Current nested interval's reps are done, move to next nested interval
+                        currentSequenceBlockState.currentRepInBracketItem = 1; // Reset rep count for the new nested interval
+                        currentSequenceBlockState.currentBracketItemIndex++; // Move to next nested interval
+
+                        if (currentSequenceBlockState.currentBracketItemIndex >= currentBlock.intervals.length) {
+                            // All nested intervals in the current bracket round are complete, move to next bracket round
+                            currentSequenceBlockState.currentBracketItemIndex = 0; // Reset to the first nested interval for the next round
+                            currentSequenceBlockState.currentBracketRound++; // Move to the next bracket round
+
+                            if (currentSequenceBlockState.currentBracketRound > currentBlock.bracketRounds) {
+                                // All bracket rounds are complete - move to next sequence block
+                                moveToNextSequenceBlock();
+                            } else {
+                                // Reset for next bracket round
+                                programStartTime = Date.now();
+                                programElapsedTime = 0;
+                            }
+                        } else {
+                            // Reset for next nested interval within current bracket round
+                            programStartTime = Date.now();
+                            programElapsedTime = 0;
+                        }
+                    } else {
+                        // Reset for next rep within the current nested interval
+                        programStartTime = Date.now();
+                        programElapsedTime = 0;
+                    }
+                }
+            }
+            updateSequenceProgramStatus();
+        }
+
+        /**
+         * Moves to the next block in the workout sequence.
+         */
+        function moveToNextSequenceBlock() {
+            currentSequenceBlockIndex++;
+            if (currentSequenceBlockIndex >= workoutSequence.length) {
+                // Sequence finished
+                stopProgram();
+                sequenceProgramStatusDisplay.textContent = 'Workout Sequence Complete!';
+                return;
+            }
+
+            // Initialize state for the new block
+            programStartTime = Date.now();
+            programElapsedTime = 0;
+            const nextBlock = workoutSequence[currentSequenceBlockIndex];
+            if (nextBlock.type === 'simple') {
+                currentSequenceBlockState = {
+                    currentRound: 1,
+                    currentRep: 1
+                };
+            } else if (nextBlock.type === 'bracket') {
+                currentSequenceBlockState = {
+                    currentBracketRound: 1,
+                    currentBracketItemIndex: 0,
+                    currentRepInBracketItem: 1
+                };
+            }
+            updateSequenceProgramStatus(); // Update status for the new block
+        }
+
+
+        /**
+         * Starts the workout sequence program.
+         */
+        function startSequenceProgram() {
+            if (programIsRunning) return; // Already running
+
+            if (!readWorkoutSequenceDefinition()) {
+                // Validation failed, message already set in readWorkoutSequenceDefinition
+                return;
+            }
+
+            if (workoutSequence.length === 0) {
+                sequenceProgramStatusDisplay.textContent = 'Workout sequence is empty. Add blocks to start.';
+                return;
+            }
+
+            stopMainClock(); // Stop the main clock when a program starts
+            activeProgramType = 'sequence';
+
+            // Initialize sequence state
+            currentSequenceBlockIndex = 0;
+            programStartTime = Date.now();
+            programElapsedTime = 0;
+
+            // Initialize state for the first block
+            const firstBlock = workoutSequence[0];
+            if (firstBlock.type === 'simple') {
+                currentSequenceBlockState = {
+                    currentRound: 1,
+                    currentRep: 1
+                };
+            } else if (firstBlock.type === 'bracket') {
+                currentSequenceBlockState = {
+                    currentBracketRound: 1,
+                    currentBracketItemIndex: 0,
+                    currentRepInBracketItem: 1
+                };
+            }
+
+            programTimerInterval = setInterval(runSequenceProgram, 100); // Check every 100ms
+            programIsRunning = true;
+            startSequenceProgramBtn.textContent = 'Pause Sequence';
+            startSequenceProgramBtn.classList.remove('btn-primary');
+            startSequenceProgramBtn.classList.add('btn-danger');
+            updateSequenceProgramStatus(); // Initial status update
+        }
+
+        /**
+         * Resets the workout sequence program.
+         */
+        function resetSequenceProgram() {
+            if (programIsRunning && activeProgramType === 'sequence') {
+                clearInterval(programTimerInterval);
+            }
+            programIsRunning = false;
+            activeProgramType = 'none';
+
+            currentSequenceBlockIndex = 0;
+            currentSequenceBlockState = {};
+            programElapsedTime = 0;
+            sequenceProgramStatusDisplay.textContent = 'Sequence Ready';
+            startSequenceProgramBtn.textContent = 'Start Sequence';
+            startSequenceProgramBtn.classList.remove('btn-danger');
+            startSequenceProgramBtn.classList.add('btn-primary');
+
+            // Clear all dynamically added sequence blocks
+            sequenceBlocksContainer.innerHTML = '';
+            workoutSequence = []; // Clear the definition array
+
+            resetMainClock(); // Reset and restart the main clock
+        }
+
+        // Event Listeners for Workout Sequence Controls
+        addSimpleBlockBtn.addEventListener('click', addSimpleBlockToSequence);
+        addBracketBlockBtn.addEventListener('click', addBracketBlockToSequence);
+        startSequenceProgramBtn.addEventListener('click', () => {
+            if (programIsRunning && activeProgramType === 'sequence') {
+                clearInterval(programTimerInterval);
+                programIsRunning = false;
+                startSequenceProgramBtn.textContent = 'Start Sequence';
+                startSequenceProgramBtn.classList.remove('btn-danger');
+                startSequenceProgramBtn.classList.add('btn-primary');
+                updateSequenceProgramStatus(); // Update status to reflect pause
+                startMainClock(); // Resume main clock
+            } else {
+                startSequenceProgram();
+            }
+        });
+        resetSequenceProgramBtn.addEventListener('click', resetSequenceProgram);
+
+
+        // --- Global Program Control (Stop/Pause for any active program) ---
+        function stopProgram() {
+            // This function is now simplified as only sequence program can be active
+            if (activeProgramType === 'sequence') {
+                clearInterval(programTimerInterval);
+                programIsRunning = false;
+                startSequenceProgramBtn.textContent = 'Start Sequence';
+                startSequenceProgramBtn.classList.remove('btn-danger');
+                startSequenceProgramBtn.classList.add('btn-primary');
+                updateSequenceProgramStatus();
+            }
+            activeProgramType = 'none';
+            startMainClock(); // Resume the main clock
+        }
+
+        function updateProgramStatusDisplay() {
+            // This function is now simplified as only sequence program can be active
+            if (activeProgramType === 'sequence') {
+                updateSequenceProgramStatus();
+            } else {
+                // If no program is running, ensure main clock is active
+                updateMainClock();
+            }
+        }
+
+        // Initial setup
+        // No need for showProgramSection, as only one section exists now
+        startMainClock(); // Start the main clock initially
+    </script>
+</body>
+</html>
